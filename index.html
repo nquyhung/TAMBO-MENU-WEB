@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>Tinh Hoa Tẩm Bổ — Hội An Wonder</title>
+<style>
+  :root{ --flip-time:.85s; --sand:#f3e6c8; --gold:#d4af6a; --red:#9e1b1b; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{ font-family:Georgia,serif;
+    background:radial-gradient(120% 90% at 50% 0%, #4a1210 0%, #2e0a09 55%, #1c0505 100%);
+    color:var(--sand); min-height:100dvh; display:flex; flex-direction:column;
+    align-items:center; overflow:hidden; -webkit-tap-highlight-color:transparent; }
+  .glow{ position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(42% 38% at 50% 50%, rgba(212,175,106,.10), transparent 70%); }
+  .topbar{ position:relative; z-index:5; width:100%; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:8px 12px; flex-wrap:wrap;
+    padding-left:calc(12px + env(safe-area-inset-left)); padding-right:calc(12px + env(safe-area-inset-right));
+    padding-top:calc(8px + env(safe-area-inset-top)); }
+  .bar-left{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .bar-right{ display:flex; gap:10px; align-items:center; }
+  .flag-btn{ display:flex; align-items:center; gap:7px; padding:5px 11px 5px 6px;
+    border:1px solid rgba(212,175,106,.32); border-radius:999px; background:rgba(255,255,255,.04);
+    color:#e0c894; cursor:pointer; font-family:system-ui,sans-serif; font-size:12.5px; transition:.2s; }
+  .flag-btn svg{ width:26px; height:18px; border-radius:3px; display:block; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
+  .flag-btn:hover{ border-color:var(--gold); color:#f7ecd0; }
+  .flag-btn.active{ background:var(--gold); color:#3a1208; border-color:var(--gold); font-weight:600; }
+  .flag-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .contact-btn{ padding:5px 13px; }
+  .contact-btn svg{ width:15px; height:15px; border-radius:0; box-shadow:none; }
+  .cat-nav{ flex:1 1 auto; min-width:0; display:flex; gap:4px; align-items:center; justify-content:center;
+    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; padding:2px 4px; }
+  .cat-nav::-webkit-scrollbar{ display:none; }
+  .cat-btn{ white-space:nowrap; padding:5px 10px; border-radius:999px; border:1px solid rgba(212,175,106,.28);
+    background:rgba(255,255,255,.03); color:#e0c894; cursor:pointer; font-family:system-ui,sans-serif;
+    font-size:12px; transition:.18s; flex:none; }
+  .cat-btn:hover{ border-color:var(--gold); color:#f7ecd0; background:rgba(212,175,106,.12); }
+  .cat-btn.active{ background:var(--gold); color:#3a1208; border-color:var(--gold); font-weight:600; }
+  @media(max-width:660px){ .cat-btn{ font-size:11px; padding:5px 8px; } }
+  @media(max-width:660px){ .flag-btn[data-lang] span{ display:none; } .flag-btn[data-lang]{ padding:5px 7px; } }
+  @media(max-width:480px){ .contact-btn span{ display:none; } .counter{ min-width:54px; font-size:12.5px; } }
+
+  .tax-note{ position:relative; z-index:5; width:100%; text-align:center; padding:1px 14px 6px;
+    font-family:system-ui,sans-serif; font-size:12px; letter-spacing:.03em; color:#dbb96f;
+    padding-left:calc(14px + env(safe-area-inset-left)); padding-right:calc(14px + env(safe-area-inset-right)); }
+  @media(max-width:660px){ .tax-note{ font-size:11px; } }
+
+  .stage-wrap{ position:relative; z-index:1; display:flex; align-items:center; justify-content:center; width:100%; flex:1; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .stage{ transform-origin:center center; transition:opacity .18s ease; }
+  .book{ position:relative; perspective:3000px; transform-style:preserve-3d;
+    filter:drop-shadow(0 30px 48px rgba(10,2,2,.65)); width:960px; height:540px; }
+  .spage{ position:absolute; inset:0; transform-origin:left center; transform-style:preserve-3d;
+    transition:transform var(--flip-time) cubic-bezier(.55,.04,.32,1); cursor:pointer; }
+  .spage.flipped{ transform:rotateY(-180deg); }
+  .sface{ position:absolute; inset:0; overflow:hidden; -webkit-backface-visibility:hidden; backface-visibility:hidden;
+    background:#7e1414 center/cover no-repeat; border-radius:6px; }
+  .sface.back{ transform:rotateY(180deg); background:linear-gradient(135deg,#8c1717,#6d0f0f); }
+  .sface.front::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:34px; z-index:3;
+    background:linear-gradient(90deg, rgba(30,4,4,.22), transparent); }
+  .turn-shade{ position:absolute; inset:0; z-index:4; pointer-events:none; border-radius:6px;
+    background:linear-gradient(90deg, rgba(20,3,3,0), rgba(20,3,3,.22)); opacity:0; transition:opacity .2s linear; }
+  .turning .turn-shade{ opacity:1; }
+  .hint{ position:absolute; bottom:16px; left:0; right:0; text-align:center; z-index:6;
+    font-family:system-ui,sans-serif; font-size:12px; letter-spacing:.26em; text-transform:uppercase;
+    pointer-events:none; color:#f7ecd0; text-shadow:0 1px 6px rgba(0,0,0,.5); animation:breathe 2.6s ease-in-out infinite; }
+  @keyframes breathe{ 0%,100%{opacity:.4;} 50%{opacity:.95;} }
+  .nav{ width:38px; height:38px; border-radius:50%; border:1px solid rgba(212,175,106,.5);
+    background:rgba(212,175,106,.08); color:#e6cd93; font-size:17px; display:grid; place-items:center;
+    cursor:pointer; transition:.2s; font-family:system-ui; flex:none; }
+  .nav:hover:not(:disabled){ background:var(--gold); color:#3a1208; border-color:var(--gold); }
+  .nav:disabled{ opacity:.28; cursor:default; }
+  .counter{ letter-spacing:.1em; font-size:13.5px; color:#e6cd93; min-width:78px; text-align:center; }
+
+  .rotate-tip{ display:none; position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+    z-index:50; padding:7px 16px; border-radius:999px; background:rgba(20,4,4,.8); border:1px solid rgba(212,175,106,.4);
+    font-family:system-ui,sans-serif; font-size:12px; color:#e6cd93; pointer-events:none; white-space:nowrap; }
+  @media (orientation:portrait){ .rotate-tip{ display:block; } }
+
+  .modal{ position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+    background:rgba(24,5,5,.76); backdrop-filter:blur(3px); padding:16px; animation:fadein .25s ease; }
+  .modal[hidden]{ display:none; }
+  .modal-card{ position:relative; width:min(440px,94vw); max-height:92vh; overflow:auto;
+    background:linear-gradient(180deg,#f6ecd6,#eee0c2); color:#5f2a1a; border:1px solid rgba(212,175,106,.5);
+    border-radius:18px; padding:30px 26px 26px; text-align:center; box-shadow:0 30px 70px rgba(0,0,0,.5);
+    animation:pop .3s cubic-bezier(.2,.8,.25,1); }
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-close{ position:absolute; top:12px; right:14px; width:34px; height:34px; border-radius:50%;
+    border:1px solid rgba(130,60,30,.28); background:transparent; color:#7e3a1e; font-size:20px; cursor:pointer; line-height:1; }
+  .modal-close:hover{ background:rgba(130,60,30,.08); }
+  .brand{ font-family:Georgia,serif; font-size:26px; color:#7e2020; }
+  .brand span{ display:block; font-size:12px; letter-spacing:.4em; color:#9a5b2e; margin-top:3px; }
+  .m-divider{ width:54px; height:1px; background:#b98a45; margin:10px auto 14px; }
+  .m-title{ font-family:Georgia,serif; font-weight:600; font-size:20px; color:#7e3a1e; letter-spacing:.14em; text-transform:uppercase; margin-bottom:16px; }
+  .contact-lines{ display:flex; flex-direction:column; gap:10px; font-size:14px; }
+  .cline{ display:flex; align-items:center; justify-content:center; gap:9px; }
+  .cline svg{ width:16px; height:16px; flex:none; color:#b98a45; }
+  .cline a, .cline > span{ color:#5f2a1a; text-decoration:none; }
+  .cline a:hover{ color:#b98a45; text-decoration:underline; }
+
+  @media (prefers-reduced-motion: reduce){ .spage,.stage{ transition-duration:.001s !important; } .hint{ animation:none; }
+    .modal,.modal-card{ animation:none; } }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <header class="topbar">
+    <div class="bar-left" id="langbar"></div>
+    <nav class="cat-nav" id="catNav"></nav>
+    <div class="bar-right">
+      <button class="nav" id="prev" aria-label="Prev" disabled>‹</button>
+      <div class="counter" id="counter"></div>
+      <button class="nav" id="next" aria-label="Next">›</button>
+    </div>
+  </header>
+  <div class="tax-note" id="taxNote"></div>
+  <div class="stage-wrap"><div class="stage" id="stage"><div class="book" id="book" tabindex="0" aria-label="Tinh Hoa Tẩm Bổ Menu"></div></div></div>
+  <div class="rotate-tip" id="rotateTip"></div>
+
+  <div class="modal" id="contactModal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+      <div class="brand">Hội An Wonder <span>RESTAURANT</span></div>
+      <div class="m-divider"></div>
+      <h2 class="m-title" id="mTitle"></h2>
+      <div class="contact-lines" id="cLines"></div>
+    </div>
+  </div>
+
+<script>
+const NFACE=22;
+const IMAGES_BY_LANG={};
+['en','ko','zh'].forEach(function(l){ IMAGES_BY_LANG[l]=[]; for(var i=1;i<=NFACE;i++) IMAGES_BY_LANG[l].push('img/'+l+'/'+i+'.jpg'); });
+
+const FLAGS = {
+"en": `<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><clipPath id="uk"><rect width="60" height="40"/></clipPath><g clip-path="url(#uk)"><rect width="60" height="40" fill="#012169"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 L60,40" stroke="#C8102E" stroke-width="3.5"/><path d="M60,0 L0,40" stroke="#C8102E" stroke-width="3.5"/><path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="12"/><path d="M30,0 V40 M0,20 H60" stroke="#C8102E" stroke-width="7"/></g></svg>`,
+"ko": `<svg viewBox="0 0 32 22" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="22" fill="#fff"/><path d="M 10.8,11 A 5.2,5.2 0 0 1 21.2,11 A 2.6,2.6 0 0 1 16,11 A 2.6,2.6 0 0 0 10.8,11 Z" fill="#CD2E3A"/><path d="M 10.8,11 A 5.2,5.2 0 0 0 21.2,11 A 2.6,2.6 0 0 0 16,11 A 2.6,2.6 0 0 1 10.8,11 Z" fill="#0047A0"/><g transform="translate(7,5) rotate(-56)" fill="#000"><rect x="-3.00" y="-2.50" width="6.00" height="1.00"/><rect x="-3.00" y="-0.50" width="6.00" height="1.00"/><rect x="-3.00" y="1.50" width="6.00" height="1.00"/></g><g transform="translate(25,5) rotate(56)" fill="#000"><rect x="-3.00" y="-2.50" width="2.40" height="1.00"/><rect x="0.60" y="-2.50" width="2.40" height="1.00"/><rect x="-3.00" y="-0.50" width="6.00" height="1.00"/><rect x="-3.00" y="1.50" width="2.40" height="1.00"/><rect x="0.60" y="1.50" width="2.40" height="1.00"/></g><g transform="translate(7,17) rotate(56)" fill="#000"><rect x="-3.00" y="-2.50" width="6.00" height="1.00"/><rect x="-3.00" y="-0.50" width="2.40" height="1.00"/><rect x="0.60" y="-0.50" width="2.40" height="1.00"/><rect x="-3.00" y="1.50" width="6.00" height="1.00"/></g><g transform="translate(25,17) rotate(-56)" fill="#000"><rect x="-3.00" y="-2.50" width="2.40" height="1.00"/><rect x="0.60" y="-2.50" width="2.40" height="1.00"/><rect x="-3.00" y="-0.50" width="2.40" height="1.00"/><rect x="0.60" y="-0.50" width="2.40" height="1.00"/><rect x="-3.00" y="1.50" width="2.40" height="1.00"/><rect x="0.60" y="1.50" width="2.40" height="1.00"/></g></svg>`,
+"zh": `<svg viewBox="0 0 32 22" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="22" fill="#DE2910"/><polygon points="5.30,2.30 6.05,4.46 8.34,4.51 6.52,5.90 7.18,8.09 5.30,6.78 3.42,8.09 4.08,5.90 2.26,4.51 4.55,4.46" fill="#FFDE00"/><polygon points="9.71,2.89 10.24,2.26 9.84,1.54 10.60,1.85 11.16,1.24 11.10,2.07 11.84,2.41 11.05,2.60 10.95,3.42 10.52,2.72" fill="#FFDE00"/><polygon points="11.76,4.74 12.50,4.38 12.42,3.56 12.99,4.15 13.74,3.82 13.36,4.55 13.90,5.16 13.09,5.02 12.68,5.73 12.56,4.91" fill="#FFDE00"/><polygon points="11.81,7.64 12.63,7.63 12.90,6.85 13.17,7.63 14.00,7.65 13.34,8.14 13.57,8.93 12.90,8.46 12.22,8.93 12.46,8.14" fill="#FFDE00"/><polygon points="9.83,9.44 10.60,9.75 11.15,9.14 11.09,9.96 11.85,10.30 11.05,10.50 10.96,11.32 10.52,10.62 9.71,10.79 10.24,10.16" fill="#FFDE00"/></svg>`
+};
+const ICON = {
+"phone": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.94.37 1.86.7 2.74a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.34-1.27a2 2 0 0 1 2.11-.45c.88.33 1.8.57 2.74.7A2 2 0 0 1 22 16.92z"/></svg>`,
+"mail": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>`,
+"pin": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`
+};
+const LANGS=['en','ko','zh'];
+const LABEL={en:'English',ko:'한국어',zh:'中文'};
+const HINT ={en:'Tap to open',ko:'탭하여 펼치기',zh:'点击翻开'};
+const COVER={en:'Cover',ko:'표지',zh:'封面'};
+const BACK ={en:'Back',ko:'마지막',zh:'封底'};
+const CONTACT_LABEL={en:'Contact',ko:'문의',zh:'联系'};
+const CONTACT_TITLE={en:'Contact Us',ko:'문의하기',zh:'联系我们'};
+const ROTATE_TIP={en:'Rotate your phone for a larger view',ko:'가로로 돌리면 더 크게 볼 수 있어요',zh:'横屏观看效果更佳'};
+const TAX_NOTE={
+  en:'Prices do not include 8% VAT and 5% service charge',
+  ko:'가격에는 8% 부가세(VAT)와 5% 봉사료가 포함되어 있지 않습니다',
+  zh:'价格未含 8% 增值税及 5% 服务费'
+};
+const CATS_LABEL={
+  en:['Overview','Main Courses','Tonic Hotpot','À la Carte'],
+  ko:['메뉴 소개','메인 요리','보양 전골','추가 메뉴'],
+  zh:['菜单总览','主菜','滋补火锅','单点加购']
+};
+const CATS_FACE=[1,3,14,17];
+
+const book=document.getElementById("book"), stage=document.getElementById("stage");
+const prevBtn=document.getElementById("prev"), nextBtn=document.getElementById("next"), counter=document.getElementById("counter");
+const langbar=document.getElementById("langbar");
+let lang='en', viewFace=0, animating=false, spages=[];
+const TIME=800;
+
+// ---- language + contact bar ----
+langbar.innerHTML = LANGS.map(l=>`<button class="flag-btn" data-lang="${l}" aria-label="${LABEL[l]}">${FLAGS[l]}<span>${LABEL[l]}</span></button>`).join("")
+  + `<button class="flag-btn contact-btn" id="contactBtn">${ICON.phone}<span></span></button>`;
+langbar.querySelectorAll(".flag-btn[data-lang]").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
+
+// ---- category quick-jump ----
+const catNav=document.getElementById('catNav');
+catNav.innerHTML=CATS_FACE.map((f,i)=>`<button class="cat-btn" data-face="${f}" data-i="${i}"></button>`).join('');
+const catBtns=[...catNav.querySelectorAll('.cat-btn')];
+catBtns.forEach(b=>b.addEventListener('click',()=>goToFace(+b.dataset.face)));
+function goToFace(f){ resetZoom(); viewFace=Math.min(NFACE-1,Math.max(0,f)); buildBook(); fitBook(); }
+function updateCatActive(){
+  let act=-1; for(let i=0;i<CATS_FACE.length;i++){ if(CATS_FACE[i]<=viewFace) act=i; }
+  catBtns.forEach((b,i)=>b.classList.toggle('active',i===act));
+  if(act>=0 && catBtns[act]) catBtns[act].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+}
+function updateCatLabels(){ catBtns.forEach((b,i)=>b.textContent=CATS_LABEL[lang][i]); }
+
+// ---- contact modal ----
+const modal=document.getElementById("contactModal");
+document.getElementById("cLines").innerHTML =
+  `<div class="cline">${ICON.phone}<a href="tel:+84833266669">(+84) 0833 266 669</a></div>`+
+  `<div class="cline">${ICON.mail}<a href="mailto:gm@hoianwonder.com">gm@hoianwonder.com</a></div>`+
+  `<div class="cline">${ICON.pin}<span>Ground floor · Hoiana Residences</span></div>`;
+function openContact(){ document.getElementById("mTitle").textContent=CONTACT_TITLE[lang]; modal.hidden=false; }
+function closeContact(){ modal.hidden=true; }
+document.getElementById("contactBtn").addEventListener("click",openContact);
+modal.addEventListener("click",e=>{ if(e.target===modal) closeContact(); });
+document.getElementById("modalClose").addEventListener("click",closeContact);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !modal.hidden) closeContact(); });
+
+// ---- lazy image window ----
+function applyImages(){
+  const im=IMAGES_BY_LANG[lang], WIN=3;
+  spages.forEach((p,k)=>{ const sf=p.querySelector('.sface.front');
+    sf.style.backgroundImage=(k>=viewFace-WIN && k<=viewFace+WIN)?`url('${im[k]}')`:''; });
+}
+function setLang(l){ if(l===lang) return; lang=l; stage.style.opacity="0.45"; applyImages(); resetZoom();
+  langbar.querySelectorAll(".flag-btn[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===l));
+  document.querySelector('#contactBtn span').textContent=CONTACT_LABEL[l];
+  document.getElementById('rotateTip').textContent=ROTATE_TIP[l];
+  document.getElementById('taxNote').textContent=TAX_NOTE[l];
+  updateCatLabels(); updateUI(); setTimeout(()=>stage.style.opacity="1",180); }
+
+// ---- book (single landscape pages) ----
+function buildBook(){ let h='';
+  for(let k=0;k<NFACE;k++){ const hint=(k===0)?'<div class="hint"></div>':'';
+    h+=`<div class="spage" data-k="${k}"><div class="sface front">${hint}</div><div class="sface back"></div><div class="turn-shade"></div></div>`; }
+  book.innerHTML=h; spages=[...book.querySelectorAll('.spage')]; applyImages();
+  spages.forEach((p,k)=>{ if(k<viewFace) p.classList.add('flipped'); });
+  updateZ(); updateUI(); }
+function updateZ(a){ spages.forEach((p,k)=>p.style.zIndex=(k<viewFace)?k:(NFACE-k)); if(a) a.style.zIndex=NFACE+5; }
+function flip(dir){ resetZoom(); if(animating) return;
+  if(dir>0 && viewFace<NFACE-1){ const p=spages[viewFace]; p.classList.add('turning'); updateZ(p);
+    requestAnimationFrame(()=>p.classList.add('flipped')); viewFace++; animating=true;
+    setTimeout(()=>{p.classList.remove('turning');updateZ(null);animating=false;},TIME); }
+  else if(dir<0 && viewFace>0){ viewFace--; const p=spages[viewFace]; p.classList.add('turning'); updateZ(p);
+    requestAnimationFrame(()=>p.classList.remove('flipped')); animating=true;
+    setTimeout(()=>{p.classList.remove('turning');updateZ(null);animating=false;},TIME); }
+  else return; updateUI(); applyImages(); }
+
+function updateUI(){
+  prevBtn.disabled=viewFace===0; nextBtn.disabled=viewFace===NFACE-1;
+  counter.textContent = viewFace===0?COVER[lang] : viewFace===NFACE-1?BACK[lang] : `${viewFace+1} / ${NFACE}`;
+  const hint=book.querySelector('.hint');
+  if(hint){ hint.textContent=HINT[lang]+' ›'; hint.style.display=(viewFace===0)?'':'none'; }
+  updateCatActive();
+}
+nextBtn.addEventListener('click',()=>flip(1));
+prevBtn.addEventListener('click',()=>flip(-1));
+document.addEventListener('keydown',e=>{ if(!modal.hidden) return; if(e.key==='ArrowRight')flip(1); if(e.key==='ArrowLeft')flip(-1); });
+
+/* ---- fit + pinch-zoom/pan ---- */
+const wrap=document.querySelector('.stage-wrap');
+const BW=960, BH=540, MAXZ=4; let fit=1, us=1, tx=0, ty=0;
+const clampn=(v,a,b)=>Math.max(a,Math.min(b,v));
+function center(){ const r=wrap.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
+function clampT(nx,ny){ const r=wrap.getBoundingClientRect(); const S=fit*us;
+  const mx=Math.max(0,(BW*S)/2 - r.width/2 + 10), my=Math.max(0,(BH*S)/2 - r.height/2 + 10);
+  return {tx:clampn(nx,-mx,mx), ty:clampn(ny,-my,my)}; }
+function applyTransform(){ stage.style.transform=`translate(${tx}px,${ty}px) scale(${fit*us})`; }
+function resetZoom(){ us=1; tx=0; ty=0; applyTransform(); }
+function zoomAt(fx,fy,bUs,bTx,bTy,us2){ const S=fit*bUs,S2=fit*us2; const c=center();
+  const n=clampT(fx-c.x-(S2/S)*(fx-c.x-bTx), fy-c.y-(S2/S)*(fy-c.y-bTy)); us=us2; tx=n.tx; ty=n.ty; applyTransform(); }
+function fitBook(){ const availW=wrap.clientWidth-12, availH=wrap.clientHeight-12;
+  if(availW<50 || availH<50) return; /* layout chưa sẵn (webview khởi tạo 0×0) — chờ ResizeObserver */
+  fit=Math.min(2.2, availW/BW, availH/BH);
+  stage.style.width=BW+'px'; stage.style.height=BH+'px'; applyTransform(); }
+if(window.ResizeObserver) new ResizeObserver(()=>fitBook()).observe(document.querySelector('.stage-wrap'));
+/* watchdog: webview có thể không bắn resize/RO khi khung đổi kích thước — tự dò mỗi 300ms */
+let lastWW=0, lastWH=0;
+setInterval(()=>{ const w=wrap.clientWidth, h=wrap.clientHeight;
+  if(w!==lastWW || h!==lastWH){ lastWW=w; lastWH=h; fitBook(); } },300);
+
+const ptrs=new Map(); let pinchStart=null, panStart=null, downInfo=null;
+wrap.addEventListener('pointerdown',e=>{ if(!modal.hidden) return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); try{wrap.setPointerCapture(e.pointerId);}catch(_){}
+  if(ptrs.size===2){ const a=[...ptrs.values()];
+    pinchStart={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),us,tx,ty}; panStart=null; downInfo=null; }
+  else if(ptrs.size===1){ if(us>1.01){ panStart={x:e.clientX,y:e.clientY,tx,ty}; }
+    else { downInfo={x:e.clientX,y:e.clientY,t:Date.now()}; } } });
+wrap.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size>=2 && pinchStart){ const a=[...ptrs.values()];
+    const dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), fx=(a[0].x+a[1].x)/2, fy=(a[0].y+a[1].y)/2;
+    zoomAt(fx,fy,pinchStart.us,pinchStart.tx,pinchStart.ty, clampn(pinchStart.us*(dist/pinchStart.dist),1,MAXZ)); }
+  else if(ptrs.size===1 && panStart){ const p=[...ptrs.values()][0];
+    const n=clampT(panStart.tx+(p.x-panStart.x), panStart.ty+(p.y-panStart.y)); tx=n.tx; ty=n.ty; applyTransform(); } });
+function endPtr(e){ if(ptrs.has(e.pointerId)){
+    try{wrap.releasePointerCapture(e.pointerId);}catch(_){}
+    if(ptrs.size===1 && downInfo && us<=1.01){ const dx=e.clientX-downInfo.x, dy=e.clientY-downInfo.y, dt=Date.now()-downInfo.t;
+      if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)) flip(dx<0?1:-1);
+      else if(Math.abs(dx)<32 && Math.abs(dy)<32 && dt<600){ const r=book.getBoundingClientRect(); (e.clientX>r.left+r.width/2)?flip(1):flip(-1); } }
+    ptrs.delete(e.pointerId); }
+  if(ptrs.size<2) pinchStart=null;
+  if(ptrs.size===0){ panStart=null; downInfo=null; if(us<1.03) resetZoom(); } }
+wrap.addEventListener('pointerup',endPtr);
+wrap.addEventListener('pointercancel',endPtr);
+wrap.addEventListener('wheel',e=>{ if(!modal.hidden) return; e.preventDefault();
+  zoomAt(e.clientX,e.clientY,us,tx,ty, clampn(us*(e.deltaY<0?1.12:0.892),1,MAXZ)); if(us<1.001) resetZoom(); },{passive:false});
+wrap.addEventListener('dblclick',e=>{ if(!modal.hidden) return;
+  if(us>1.01){ resetZoom(); } else { zoomAt(e.clientX,e.clientY,1,0,0,2.5); } });
+window.addEventListener('resize',fitBook);
+window.addEventListener('orientationchange',()=>setTimeout(fitBook,120));
+
+// ---- bootstrap ----
+langbar.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+document.querySelector('#contactBtn span').textContent=CONTACT_LABEL[lang];
+document.getElementById('rotateTip').textContent=ROTATE_TIP[lang];
+document.getElementById('taxNote').textContent=TAX_NOTE[lang];
+updateCatLabels();
+buildBook(); fitBook();
+</script>
+</body>
+</html>
