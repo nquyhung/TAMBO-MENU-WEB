@@ -36,17 +36,20 @@
     pointer-events:none; color:#f7ecd0; text-shadow:0 1px 6px rgba(0,0,0,.5); animation:breathe 2.6s ease-in-out infinite; }
   @keyframes breathe{ 0%,100%{opacity:.4;} 50%{opacity:.95;} }
 
-  /* ---- overlay: lớp trên, đè cạnh dưới menu ---- */
-  .overlay{ position:fixed; left:0; right:0; bottom:0; z-index:6; display:flex; flex-direction:column; align-items:center; gap:7px;
-    padding:16px 12px calc(6px + env(safe-area-inset-bottom));
-    padding-left:calc(12px + env(safe-area-inset-left)); padding-right:calc(12px + env(safe-area-inset-right));
-    background:linear-gradient(to top, rgba(18,3,3,.96) 0%, rgba(18,3,3,.96) 55%, rgba(18,3,3,.75) 80%, rgba(18,3,3,0)); }
-
-  .tax-note{ width:100%; text-align:center; font-family:system-ui,sans-serif; font-size:16px;
+  /* ---- thanh trên: dòng thuế sát mép trên (nền + chiều cao do JS đặt để phủ kín khe hở trên) ---- */
+  .topbar{ position:fixed; top:0; left:0; right:0; z-index:6; display:flex; align-items:flex-start; justify-content:center;
+    pointer-events:none;
+    padding:calc(9px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left)); }
+  .tax-note{ text-align:center; font-family:system-ui,sans-serif; font-size:16px;
     letter-spacing:.02em; color:#e6c67e; text-shadow:0 1px 4px rgba(0,0,0,.6); line-height:1.3; }
 
-  .cat-nav{ max-width:100%; display:flex; gap:5px; align-items:center; justify-content:center;
-    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; padding:1px 2px; }
+  /* ---- thanh dưới: danh mục (trái) · ngôn ngữ + liên hệ (phải) ---- */
+  .bottombar{ position:fixed; bottom:0; left:0; right:0; z-index:6; display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
+    pointer-events:none;
+    padding:0 calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+
+  .cat-nav{ display:flex; gap:5px; align-items:center; min-width:0; flex:1 1 auto;
+    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; padding:1px 2px; pointer-events:auto; }
   .cat-nav::-webkit-scrollbar{ display:none; }
   .cat-btn{ white-space:nowrap; padding:6px 13px; border-radius:999px; border:1px solid rgba(212,175,106,.32);
     background:rgba(255,255,255,.05); color:#e0c894; cursor:pointer; font-family:system-ui,sans-serif;
@@ -54,7 +57,7 @@
   .cat-btn:hover{ border-color:var(--gold); color:#f7ecd0; background:rgba(212,175,106,.12); }
   .cat-btn.active{ background:var(--gold); color:#3a1208; border-color:var(--gold); font-weight:600; }
 
-  .langbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .langbar{ display:flex; gap:8px; align-items:center; justify-content:flex-end; flex:none; pointer-events:auto; }
   .flag-btn{ display:flex; align-items:center; gap:7px; padding:5px 11px 5px 6px;
     border:1px solid rgba(212,175,106,.32); border-radius:999px; background:rgba(255,255,255,.05);
     color:#e0c894; cursor:pointer; font-family:system-ui,sans-serif; font-size:12.5px; transition:.2s; }
@@ -98,8 +101,10 @@
   <div class="glow"></div>
   <div class="stage-wrap"><div class="stage" id="stage"><div class="book" id="book" tabindex="0" aria-label="Tinh Hoa Tẩm Bổ Menu"></div></div></div>
 
-  <div class="overlay" id="overlay">
+  <div class="topbar" id="topbar">
     <div class="tax-note" id="taxNote"></div>
+  </div>
+  <div class="bottombar" id="bottombar">
     <nav class="cat-nav" id="catNav"></nav>
     <div class="langbar" id="langbar"></div>
   </div>
@@ -147,7 +152,8 @@ const CATS_LABEL={
 const CATS_FACE=[1,2,15,17];
 
 const book=document.getElementById("book"), stage=document.getElementById("stage");
-const langbar=document.getElementById("langbar"), overlay=document.getElementById("overlay");
+const langbar=document.getElementById("langbar");
+const topbar=document.getElementById("topbar"), bottombar=document.getElementById("bottombar");
 let lang='en', viewFace=0, animating=false, spages=[];
 const TIME=800;
 
@@ -233,9 +239,16 @@ function zoomAt(fx,fy,bUs,bTx,bTy,us2){ const S=fit*bUs,S2=fit*us2; const c=cent
 function fitBook(){ const availW=wrap.clientWidth-6, availH=wrap.clientHeight-6;
   if(availW<50 || availH<50) return; /* layout chưa sẵn (webview khởi tạo 0×0) — chờ ResizeObserver */
   fit=Math.min(3.0, availW/BW, availH/BH);
-  /* căn đáy: dồn khoảng hở lên trên để đáy menu chạm mép dưới màn hình (hết hở chân khi lật) */
-  baseY=Math.max(0, (wrap.clientHeight - fit*BH)/2);
-  stage.style.width=BW+'px'; stage.style.height=BH+'px'; applyTransform(); }
+  /* menu căn giữa; 2 dải hở trên/dưới được thanh trên & thanh dưới che (hết hở chân khi lật) */
+  baseY=0;
+  stage.style.width=BW+'px'; stage.style.height=BH+'px'; applyTransform();
+  /* khe hở trên/dưới = (màn hình - chiều cao menu)/2; đặt nền 2 thanh phủ kín khe theo từng thiết bị */
+  const gap=Math.max(0,(wrap.clientHeight - fit*BH)/2), cover=Math.round(gap+8), fade=Math.round(gap+46), oh=Math.round(gap+54);
+  topbar.style.minHeight=oh+'px';
+  bottombar.style.minHeight=oh+'px';
+  topbar.style.background=`linear-gradient(to bottom, rgba(18,3,3,.96) 0, rgba(18,3,3,.96) ${cover}px, rgba(18,3,3,0) ${fade}px)`;
+  bottombar.style.background=`linear-gradient(to top, rgba(18,3,3,.96) 0, rgba(18,3,3,.96) ${cover}px, rgba(18,3,3,0) ${fade}px)`;
+}
 if(window.ResizeObserver) new ResizeObserver(()=>fitBook()).observe(document.querySelector('.stage-wrap'));
 /* watchdog: webview có thể không bắn resize/RO khi khung đổi kích thước — tự dò mỗi 300ms */
 let lastWW=0, lastWH=0;
