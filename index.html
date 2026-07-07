@@ -37,10 +37,10 @@
   @keyframes breathe{ 0%,100%{opacity:.4;} 50%{opacity:.95;} }
 
   /* ---- overlay: lớp trên, đè cạnh dưới menu ---- */
-  .overlay{ position:fixed; left:0; right:0; z-index:6; display:flex; flex-direction:column; align-items:center; gap:7px;
-    padding:14px 12px calc(10px + env(safe-area-inset-bottom));
+  .overlay{ position:fixed; left:0; right:0; bottom:0; z-index:6; display:flex; flex-direction:column; align-items:center; gap:7px;
+    padding:16px 12px calc(6px + env(safe-area-inset-bottom));
     padding-left:calc(12px + env(safe-area-inset-left)); padding-right:calc(12px + env(safe-area-inset-right));
-    background:linear-gradient(to top, rgba(18,3,3,.94) 42%, rgba(18,3,3,.72) 74%, rgba(18,3,3,0)); }
+    background:linear-gradient(to top, rgba(18,3,3,.96) 0%, rgba(18,3,3,.96) 55%, rgba(18,3,3,.75) 80%, rgba(18,3,3,0)); }
 
   .tax-note{ width:100%; text-align:center; font-family:system-ui,sans-serif; font-size:16px;
     letter-spacing:.02em; color:#e6c67e; text-shadow:0 1px 4px rgba(0,0,0,.6); line-height:1.3; }
@@ -220,22 +220,22 @@ document.addEventListener('keydown',e=>{ if(!modal.hidden) return; if(e.key==='A
 
 /* ---- fit + pinch-zoom/pan ---- */
 const wrap=document.querySelector('.stage-wrap');
-const BW=600, BH=800, MAXZ=4; let fit=1, us=1, tx=0, ty=0;
+const BW=600, BH=800, MAXZ=4; let fit=1, us=1, tx=0, ty=0, baseY=0;
 const clampn=(v,a,b)=>Math.max(a,Math.min(b,v));
-function center(){ const r=wrap.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
+function center(){ const r=wrap.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2+baseY}; }
 function clampT(nx,ny){ const r=wrap.getBoundingClientRect(); const S=fit*us;
   const mx=Math.max(0,(BW*S)/2 - r.width/2 + 10), my=Math.max(0,(BH*S)/2 - r.height/2 + 10);
   return {tx:clampn(nx,-mx,mx), ty:clampn(ny,-my,my)}; }
-function applyTransform(){ stage.style.transform=`translate(${tx}px,${ty}px) scale(${fit*us})`; }
+function applyTransform(){ stage.style.transform=`translate(${tx}px,${ty+baseY}px) scale(${fit*us})`; }
 function resetZoom(){ us=1; tx=0; ty=0; applyTransform(); }
 function zoomAt(fx,fy,bUs,bTx,bTy,us2){ const S=fit*bUs,S2=fit*us2; const c=center();
   const n=clampT(fx-c.x-(S2/S)*(fx-c.x-bTx), fy-c.y-(S2/S)*(fy-c.y-bTy)); us=us2; tx=n.tx; ty=n.ty; applyTransform(); }
-function layoutBars(){ const r=book.getBoundingClientRect();
-  overlay.style.bottom=Math.max(0, Math.round(window.innerHeight - r.bottom))+'px'; }
 function fitBook(){ const availW=wrap.clientWidth-6, availH=wrap.clientHeight-6;
   if(availW<50 || availH<50) return; /* layout chưa sẵn (webview khởi tạo 0×0) — chờ ResizeObserver */
   fit=Math.min(3.0, availW/BW, availH/BH);
-  stage.style.width=BW+'px'; stage.style.height=BH+'px'; applyTransform(); layoutBars(); }
+  /* căn đáy: dồn khoảng hở lên trên để đáy menu chạm mép dưới màn hình (hết hở chân khi lật) */
+  baseY=Math.max(0, (wrap.clientHeight - fit*BH)/2);
+  stage.style.width=BW+'px'; stage.style.height=BH+'px'; applyTransform(); }
 if(window.ResizeObserver) new ResizeObserver(()=>fitBook()).observe(document.querySelector('.stage-wrap'));
 /* watchdog: webview có thể không bắn resize/RO khi khung đổi kích thước — tự dò mỗi 300ms */
 let lastWW=0, lastWH=0;
